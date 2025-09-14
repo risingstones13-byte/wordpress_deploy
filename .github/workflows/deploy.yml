@@ -1,0 +1,24 @@
+name: Deploy to WordPress
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Deploy posts to WordPress
+        run: |
+          for file in posts/*.html; do
+            CONTENT=$(cat "$file")
+            TITLE=$(basename "$file" .html)
+            curl -X POST "https://kabu24h365dojo.shop/wp-json/wp/v2/posts" \
+              -u "${{ secrets.WP_USER }}:${{ secrets.WP_PASS }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"title\":\"$TITLE\",\"content\":\"$CONTENT\",\"status\":\"publish\"}"
+          done
