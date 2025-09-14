@@ -1,34 +1,14 @@
-name: Deploy HTML to WordPress
+- name: Deploy posts to WordPress
+  env:
+    WP_USER: ${{ secrets.WP_USER }}
+    WP_PASS: ${{ secrets.WP_PASS }}
+  run: |
+    for file in posts/*.html; do
+      TITLE=$(basename "$file" .html)
+      jq -Rs --arg title "$TITLE" '{title:$title, content:., status:"publish"}' < "$file" > temp.json
 
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: List posts folder
-        run: ls -la posts
-
-      - name: Deploy posts to WordPress
-        run: |
-          for file in posts/*.html; do
-            TITLE=$(basename "$file" .html)
-            # HTML を安全に JSON 文字列に変換して temp.json に保存
-            jq -Rs --arg title "$TITLE" '{title:$title, content:., status:"publish"}' < "$file" > temp.json
-
-            # curl で WordPress に投稿
-            curl -u "${{ secrets.WP_USER }}:${{ secrets.WP_PASS }}" \
-                 -X POST "https://kabu24h365dojo.shop/wp-json/wp/v2/posts" \
-                 -H "Content-Type: application/json" \
-                 --data-binary @temp.json
-          done
+      curl -u "$WP_USER:$WP_PASS" \
+           -X POST "https://kabu24h365dojo.shop/wp-json/wp/v2/posts" \
+           -H "Content-Type: application/json" \
+           --data-binary @temp.json
+    done
